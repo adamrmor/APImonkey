@@ -1,0 +1,66 @@
+#!uusr/bin/env python
+# -*- coding: utf-8 -*-import json
+__aAuthor__ = 'API Monkey'
+import json
+import settings
+import tweepy
+import time
+import shutil
+import requests
+from datetime import date, datetime
+import string
+import random
+
+#Create a random 3 digit number that will be searched
+def search(size=3, chars=string.digits):
+     return ''.join(random.choice(chars) for _ in range(size))
+
+def executesomething():
+    key = (settings.API_KEY)
+#Twitter log in (details in settings file)
+    auth = tweepy.OAuthHandler(settings.CONSUMER_KEY, settings.CONSUMER_SECRET)
+    auth.set_access_token(settings.ACCESS_KEY, settings.ACCESS_SECRET)
+    api = tweepy.API(auth)
+
+#select the base URL and add the API key and keyword to the end
+    A ='http://api.aucklandmuseum.com/v1/search/collectionsonline/_search/?simple=true&size=1&api_key='
+    b = A + key
+    url = b + '&q=primaryRepresentation:http*+NOT+department:"publications"+NOT+department:"Maori/Ethnology"+NOT+department:"manuscripts"+AND+'
+    geturl = url + str (search())
+
+#run the search and fetch the results as a Json file
+    result = requests.get(geturl)
+    parsed_json = json.loads(result.text)
+
+
+#Open and parse the Json file to extract the specified fields (title, Brief Decription, Department and link)
+    #title = parsed_json["hits"]["hits"][0]['_source']['appellation']['Primary Title']
+    #desc = parsed_json["hits"]["hits"][0]['_source']['dc_description']
+    #dept = parsed_json["hits"]["hits"][1]['_source']['department']
+    link = parsed_json["hits"]["hits"][0]['_id']
+    imagelink = parsed_json ["hits"]["hits"][0]['_source']['primaryRepresentation']
+
+#clean up the ID to create a url for the link
+    cleanid = link.replace("am:","am_")
+    finid = cleanid.replace("/","-")
+#Desc = Dirtydesc.replace ("["," ")
+
+#clean up the image path - go fetch the standard image
+
+    imagepath = imagelink.replace('http://rdf.aucklandmuseum.com/','http://webapi.aucklandmuseum.com/media/')
+    image = imagepath + str('/standard.jpg')
+
+    Furl = "http://www.aucklandmuseum.com/collections-research/collections/record/" + str (finid)
+    imageurl = image
+    response = requests.get(imageurl, stream=True)
+    with open('img.png', 'wb') as out_file:
+        shutil.copyfileobj(response.raw, out_file)
+    del response
+    tweet = Furl #+ str(desc)
+    api.update_with_media('--local file location--',str (tweet))
+    print tweet
+#Tweet every 60 mins
+    time.sleep(3000)
+
+while True:
+    executesomething()
