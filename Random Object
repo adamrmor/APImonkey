@@ -57,7 +57,7 @@ def executesomething():
         shutil.copyfileobj(response.raw, out_file)
     del response
     tweet = Furl #+ str(desc)
-    api.update_with_media('--local file location--',str (tweet))
+    api.update_with_media('img.png',str (tweet))
     print tweet
 #Tweet every 60 mins
     time.sleep(3000)
